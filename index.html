@@ -468,18 +468,16 @@
                 <div id="empty-qr" class="empty-state">Selecteer drankjes om QR code te genereren</div>
                 <div id="no-data" class="no-data-state" style="display: none;">
                     🚨 <strong>Geen gegevens geconfigureerd!</strong><br>
-                    Ga naar Config tab om personen en drankjes in te stellen.
+                    Ga naar Config tab om personen, drankjes en de actieve rekening in te stellen.
                 </div>
             </div>
             
             <!-- Total prominently displayed -->
             <div class="total" id="total-display">€0.00 (0)</div>
             
-            <!-- Begunstigde selector -->
-            <div id="begunstigde-section" class="begunstigde" style="display: none;">
-                <button class="nav-btn" onclick="previousBegunstigde()">◀</button>
-                <div class="begunstigde-name" id="current-begunstigde">-</div>
-                <button class="nav-btn" onclick="nextBegunstigde()">▶</button>
+            <!-- Active Account Display -->
+            <div id="active-account-section" class="begunstigde" style="display: none;">
+                <div class="begunstigde-name" id="active-account-name">Geen actieve rekening</div>
             </div>
         </div>
         
@@ -498,6 +496,17 @@
                     <!-- Person configs will be generated here -->
                 </div>
                 <button class="add-person-btn" onclick="addPerson()">➕ Persoon Toevoegen</button>
+                
+                <!-- Active Account Selection -->
+                <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px; border: 2px solid #4CAF50;">
+                    <h4 style="color: #2e7d32; margin-bottom: 10px;">🎯 Actieve Rekening</h4>
+                    <p style="color: #2e7d32; font-size: 13px; margin-bottom: 10px;">
+                        Selecteer welke rekening gebruikt wordt voor betalingen:
+                    </p>
+                    <select id="active-account-select" class="person-input" style="background: white;">
+                        <option value="">-- Selecteer actieve rekening --</option>
+                    </select>
+                </div>
             </div>
             
             <!-- Drinks Configuration -->
@@ -512,6 +521,34 @@
                 </div>
                 
                 <textarea id="drinks-config" class="config-textarea" placeholder="2.50,Cola / Jupiler&#10;4.00,Duvel / Wijn&#10;17.00,Wijn fles"></textarea>
+            </div>
+
+            <!-- Excel Upload Section -->
+            <div class="config-section">
+                <h3>📊 Excel Import (Optioneel)</h3>
+                <div class="config-info">
+                    <strong>💡 Handiger:</strong> Configureer alles op PC en upload naar app!<br>
+                    1. Download template Excel bestand<br>
+                    2. Vul personen en drankjes in op PC<br>  
+                    3. Upload hier en alles wordt automatisch ingeladen
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="config-btn" style="flex: none; background: #2196F3;" onclick="downloadTemplate()">
+                        📥 Download Template
+                    </button>
+                </div>
+                
+                <div style="border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; background: #fafafa;">
+                    <input type="file" id="excel-upload" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleFileUpload(event)">
+                    <button class="config-btn" style="background: #FF9800;" onclick="document.getElementById('excel-upload').click()">
+                        📤 Upload Excel/CSV
+                    </button>
+                    <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                        Ondersteunt .xlsx, .xls en .csv bestanden
+                    </p>
+                    <div id="upload-status" style="margin-top: 10px; font-size: 13px;"></div>
+                </div>
             </div>
             
             <div class="config-buttons">
@@ -531,7 +568,7 @@
 
     <script>
         // App state
-        let currentBegunstigdeIndex = 0;
+        let activeAccountIndex = 0;
         let currentTotal = 0;
         let currentCount = 0;
         let persons = [];
@@ -598,17 +635,17 @@
         function checkDataAvailability() {
             const noDataEl = document.getElementById('no-data');
             const emptyQrEl = document.getElementById('empty-qr');
-            const begunstigdeSection = document.getElementById('begunstigde-section');
+            const activeAccountSection = document.getElementById('active-account-section');
             
-            if (persons.length === 0 || drinks.length === 0) {
+            if (persons.length === 0 || drinks.length === 0 || activeAccountIndex >= persons.length) {
                 noDataEl.style.display = 'block';
                 emptyQrEl.style.display = 'none';
-                begunstigdeSection.style.display = 'none';
+                activeAccountSection.style.display = 'none';
                 document.getElementById('drinks-section').style.display = 'none';
             } else {
                 noDataEl.style.display = 'none';
                 emptyQrEl.style.display = currentTotal === 0 ? 'block' : 'none';
-                begunstigdeSection.style.display = 'flex';
+                activeAccountSection.style.display = 'flex';
                 if (document.querySelector('.tab.active').textContent === 'Bestellen') {
                     document.getElementById('drinks-section').style.display = 'block';
                 }
@@ -646,30 +683,20 @@
             updateDisplay();
         }
 
-        function previousBegunstigde() {
-            currentBegunstigdeIndex = (currentBegunstigdeIndex - 1 + persons.length) % persons.length;
-            updateDisplay();
-        }
-
-        function nextBegunstigde() {
-            currentBegunstigdeIndex = (currentBegunstigdeIndex + 1) % persons.length;
-            updateDisplay();
-        }
-
         function updateDisplay() {
-            if (persons.length === 0) {
+            if (persons.length === 0 || activeAccountIndex >= persons.length) {
                 checkDataAvailability();
                 return;
             }
 
-            document.getElementById('current-begunstigde').textContent = persons[currentBegunstigdeIndex].name;
+            document.getElementById('active-account-name').textContent = persons[activeAccountIndex].name;
             document.getElementById('total-display').textContent = `€${currentTotal.toFixed(2)} (${currentCount})`;
             
             const qrImage = document.getElementById('qr-image');
             const emptyQr = document.getElementById('empty-qr');
             
             if (currentTotal > 0) {
-                const person = persons[currentBegunstigdeIndex];
+                const person = persons[activeAccountIndex];
                 const payload = makeSEPAPayload(person.name, person.iban, currentTotal);
                 
                 generateQRCode(payload);
@@ -698,9 +725,23 @@
                 } else {
                     drinks = [];
                 }
+
+                // Load active account index
+                const savedActiveAccount = localStorage.getItem('sepa-qr-active-account');
+                if (savedActiveAccount) {
+                    activeAccountIndex = parseInt(savedActiveAccount, 10) || 0;
+                } else {
+                    activeAccountIndex = 0;
+                }
+
+                // Ensure active account index is valid
+                if (activeAccountIndex >= persons.length) {
+                    activeAccountIndex = 0;
+                }
             } catch (e) {
                 persons = [];
                 drinks = [];
+                activeAccountIndex = 0;
             }
         }
 
@@ -745,14 +786,23 @@
                 if (newDrinks.length === 0) {
                     throw new Error('Voeg tenminste één drankje toe!');
                 }
+
+                // Save active account selection
+                const activeSelect = document.getElementById('active-account-select');
+                const newActiveIndex = parseInt(activeSelect.value) || 0;
+                
+                if (newActiveIndex >= newPersons.length) {
+                    throw new Error('Selecteer een geldige actieve rekening!');
+                }
                 
                 persons = newPersons;
                 drinks = newDrinks;
+                activeAccountIndex = newActiveIndex;
                 
                 localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
                 localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
+                localStorage.setItem('sepa-qr-active-account', activeAccountIndex.toString());
                 
-                currentBegunstigdeIndex = 0;
                 renderDrinks();
                 updateDisplay();
                 checkDataAvailability();
@@ -771,9 +821,11 @@
             if (confirm('Weet je zeker dat je alle gegevens wilt resetten naar de standaardwaarden?')) {
                 persons = [...DEFAULT_PERSONS];
                 drinks = [...DEFAULT_DRINKS];
+                activeAccountIndex = 0;
                 
                 localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
                 localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
+                localStorage.setItem('sepa-qr-active-account', '0');
                 
                 updateConfigUI();
                 renderDrinks();
@@ -797,10 +849,28 @@
             if (persons.length === 0) {
                 addPersonConfig('', '');
             }
+
+            // Update active account selector
+            updateActiveAccountSelector();
             
             // Update drinks textarea
             const textarea = document.getElementById('drinks-config');
             textarea.value = drinks.map(([price, name]) => `${price},${name}`).join('\n');
+        }
+
+        function updateActiveAccountSelector() {
+            const select = document.getElementById('active-account-select');
+            select.innerHTML = '<option value="">-- Selecteer actieve rekening --</option>';
+            
+            persons.forEach((person, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = person.name;
+                if (index === activeAccountIndex) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         }
 
         function addPerson() {
@@ -822,6 +892,9 @@
             `;
             
             personsContainer.appendChild(personDiv);
+            
+            // Update active account selector when persons change
+            setTimeout(updateActiveAccountSelector, 100);
         }
 
         function removePerson(button) {
@@ -833,8 +906,152 @@
                 Array.from(personsContainer.children).forEach((config, index) => {
                     config.querySelector('.person-header span').textContent = `👤 Persoon ${index + 1}`;
                 });
+                
+                // Update active account selector
+                setTimeout(updateActiveAccountSelector, 100);
             } else {
                 alert('Je moet tenminste één persoon hebben!');
+            }
+        }
+
+        // Excel/CSV Functions
+        function downloadTemplate() {
+            // Create CSV template
+            const csvContent = `Personen:,,
+Naam,IBAN,Actief
+Voorbeeld Persoon,BE12345678901234,JA
+Test Persoon 2,BE98765432109876,NEE
+,,
+Drankjes:,,
+Prijs,Naam,
+2.50,"Cola / Jupiler / Koffie"
+4.00,"Duvel / Wijn"
+6.00,"Mojito"
+17.00,"Wijn fles"`;
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'SEPA-QR-Template.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showUploadStatus('✅ Template gedownload! Vul in en upload terug.', 'success');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            showUploadStatus('📂 Bestand wordt verwerkt...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    parseUploadedFile(content, file.name);
+                } catch (error) {
+                    showUploadStatus('❌ Fout bij lezen bestand: ' + error.message, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function parseUploadedFile(content, filename) {
+            try {
+                // Simple CSV parser
+                const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+                
+                let inPersonsSection = false;
+                let inDrinksSection = false;
+                const newPersons = [];
+                const newDrinks = [];
+                let newActiveIndex = 0;
+                
+                for (let line of lines) {
+                    line = line.replace(/"/g, ''); // Remove quotes
+                    
+                    if (line.startsWith('Personen:')) {
+                        inPersonsSection = true;
+                        inDrinksSection = false;
+                        continue;
+                    }
+                    
+                    if (line.startsWith('Drankjes:')) {
+                        inPersonsSection = false;
+                        inDrinksSection = true;
+                        continue;
+                    }
+                    
+                    if (line.startsWith('Naam,') || line.startsWith('Prijs,') || line === '') {
+                        continue; // Skip headers and empty lines
+                    }
+                    
+                    const parts = line.split(',').map(part => part.trim());
+                    
+                    if (inPersonsSection && parts.length >= 2) {
+                        const name = parts[0];
+                        const iban = parts[1];
+                        const isActive = parts[2] && parts[2].toUpperCase() === 'JA';
+                        
+                        if (name && iban) {
+                            if (isActive) {
+                                newActiveIndex = newPersons.length;
+                            }
+                            newPersons.push({ name, iban });
+                        }
+                    }
+                    
+                    if (inDrinksSection && parts.length >= 2) {
+                        const price = parseFloat(parts[0]);
+                        const name = parts.slice(1).join(',').trim();
+                        
+                        if (!isNaN(price) && name) {
+                            newDrinks.push([price, name]);
+                        }
+                    }
+                }
+                
+                if (newPersons.length === 0) {
+                    throw new Error('Geen geldige personen gevonden in bestand');
+                }
+                
+                if (newDrinks.length === 0) {
+                    throw new Error('Geen geldige drankjes gevonden in bestand');
+                }
+                
+                // Apply imported data
+                persons = newPersons;
+                drinks = newDrinks;
+                activeAccountIndex = newActiveIndex;
+                
+                // Update UI
+                updateConfigUI();
+                
+                showUploadStatus(`✅ Import geslaagd! ${persons.length} personen en ${drinks.length} drankjes ingeladen.`, 'success');
+                
+            } catch (error) {
+                showUploadStatus('❌ Fout bij verwerken: ' + error.message, 'error');
+            }
+        }
+
+        function showUploadStatus(message, type) {
+            const status = document.getElementById('upload-status');
+            status.textContent = message;
+            status.style.color = type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3';
+            
+            if (type !== 'info') {
+                setTimeout(() => {
+                    status.textContent = '';
+                }, 5000);
             }
         }
 
