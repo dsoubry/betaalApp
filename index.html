@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍺 SEPA QR Betaalapp</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2196F3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SEPA QR">
+    <meta name="description" content="Configureerbare SEPA QR betaal app">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU0VQQSBRUiBCZXRhYWxhcHAiLCJzaG9ydF9uYW1lIjoiU0VQQSBRUiIsImRlc2NyaXB0aW9uIjoiQ29uZmlndXJlZXJiYXJlIFNFUEEgUVIgYmV0YWFsIGFwcCIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzIxOTZGMyIsImJhY2tncm91bmRfY29sb3IiOiIjZjVmN2ZhIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDt1dGY4LCUzQ3N2ZyB2aWV3Qm94PSUyNzAlMjAwJTIwMTAwJTIwMTAwJTI3IHhtbG5zPSUyN2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJTI3JTNDQ2NpcmNsZSBjeD0lMjc1MCUyNyBjeT0lMjc1MCUyNyByPSUyNzQ1JTI3IGZpbGw9JTI3JTIzMjE5NkYzJTI3LyUzRSUzQ3RleHQgeD0lMjc1MCUyNyB5PSUyNzY1JTI3IGZvbnQtc2l6ZT0lMjc0MCUyNyB0ZXh0LWFuY2hvcj0lMjdtaWRkbGUlMjcgZmlsbD0lMjd3aGl0ZSUyNyUzRSVGMCU5RiU4RCVCQSUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIiwicHVycG9zZSI6ImFueSBtYXNrYWJsZSJ9XX0=">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>">
+    
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 5px;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 400px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* PWA Install Banner */
+        .install-banner {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 12px 15px;
+            margin: 10px 10px 0;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        
+        .install-banner.show {
+            display: flex;
+        }
+        
+        .install-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .close-banner {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 6px;
+        }
+        
+        /* Setup Banner */
+        .setup-banner {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            padding: 12px 15px;
+            margin: 10px 10px 0;
+            border-radius: 10px;
+            font-size: 13px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        }
+        
+        .setup-banner.hidden {
+            display: none;
+        }
+        
+        .setup-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .tab-bar {
+            display: flex;
+            background: #f8f9fa;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+        
+        .screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .title {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .qr-container { 
+            text-align: center; 
+            margin: 20px auto; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-image { 
+            max-width: 180px;
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .begunstigde { 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 15px;
+        }
+        
+        .nav-btn { 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; 
+            border: none; 
+            background: #2196F3; 
+            color: white; 
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(33,150,243,0.3);
+            transition: all 0.2s;
+        }
+        
+        .nav-btn:active {
+            background: #1976D2;
+            transform: translateY(1px);
+        }
+        
+        .begunstigde-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            min-width: 160px;
+        }
+        
+        .total { 
+            text-align: center; 
+            font-size: 32px; 
+            font-weight: 700;
+            color: #2196F3; 
+            margin: 25px 0; 
+        }
+        
+        .drinks { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin: 20px 0; 
+        }
+        
+        .drink-btn { 
+            padding: 16px 12px; 
+            background: white;
+            color: #333; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 10px; 
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .drink-btn:active {
+            border-color: #2196F3;
+            background: #f8f9ff;
+            transform: translateY(1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .drink-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2196F3;
+            margin-bottom: 4px;
+        }
+        
+        .drink-name {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .reset-btn { 
+            width: 100%; 
+            padding: 16px; 
+            background: #f44336; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 25px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(244,67,54,0.3);
+            transition: all 0.2s;
+        }
+        
+        .reset-btn:active {
+            background: #d32f2f;
+            transform: translateY(1px);
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+        
+        .no-data-state {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: 16px;
+            margin: 40px 20px;
+            padding: 20px;
+            background: #fff5f5;
+            border-radius: 10px;
+            border: 2px dashed #ff6b6b;
+        }
+        
+        /* Config styles */
+        .config-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+            text-align: left;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .config-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        .config-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .person-config {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .person-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .person-input, .iban-input, .config-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+        
+        .person-input {
+            font-weight: 600;
+        }
+        
+        .iban-input {
+            font-family: monospace;
+            color: #2196F3;
+        }
+        
+        .config-textarea {
+            height: 200px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        
+        .add-person-btn, .remove-person-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .add-person-btn {
+            background: #4CAF50;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .remove-person-btn {
+            background: #f44336;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .config-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .config-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .reset-btn-config {
+            background: #FF9800;
+            color: white;
+        }
+        
+        .config-status {
+            text-align: center;
+            font-size: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+        
+        .drinks-section {
+            padding: 0 20px 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- PWA Install Banner -->
+    <div id="install-banner" class="install-banner">
+        <span>📱 Installeer als app</span>
+        <button class="install-btn" onclick="installApp()">Installeer</button>
+        <button class="close-banner" onclick="closeBanner()">×</button>
+    </div>
+
+    <!-- Setup Banner -->
+    <div id="setup-banner" class="setup-banner">
+        <div>⚙️ <strong>Eerste keer?</strong> Ga naar Config om je gegevens in te stellen!</div>
+        <button class="setup-btn" onclick="showConfig()">Config openen</button>
+    </div>
+
+    <div class="container">
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <button class="tab active" onclick="showTab('order', this)">Bestellen</button>
+            <button class="tab" onclick="showTab('config', this)">Config</button>
+        </div>
+        
+        <!-- Order Screen -->
+        <div id="order-screen" class="screen active">
+            <div class="title">🍺 SEPA QR Betaalapp</div>
+            
+            <!-- QR Code at top, centered -->
+            <div class="qr-container">
+                <img id="qr-image" class="qr-image" src="" style="display: none;" alt="QR Code">
+                <div id="empty-qr" class="empty-state">Selecteer drankjes om QR code te genereren</div>
+                <div id="no-data" class="no-data-state" style="display: none;">
+                    🚨 <strong>Geen gegevens geconfigureerd!</strong><br>
+                    Ga naar Config tab om personen en drankjes in te stellen.
+                </div>
+            </div>
+            
+            <!-- Total prominently displayed -->
+            <div class="total" id="total-display">€0.00 (0)</div>
+            
+            <!-- Begunstigde selector -->
+            <div id="begunstigde-section" class="begunstigde" style="display: none;">
+                <button class="nav-btn" onclick="previousBegunstigde()">◀</button>
+                <div class="begunstigde-name" id="current-begunstigde">-</div>
+                <button class="nav-btn" onclick="nextBegunstigde()">▶</button>
+            </div>
+        </div>
+        
+        <!-- Config Screen -->
+        <div id="config-screen" class="screen">
+            <div class="title">⚙️ Configuratie</div>
+            
+            <div class="config-info">
+                <strong>💡 Privacy:</strong> Alle gegevens blijven lokaal op jouw telefoon opgeslagen. Niets wordt online gedeeld!
+            </div>
+            
+            <!-- Persons Configuration -->
+            <div class="config-section">
+                <h3>👥 Personen & Rekeningnummers</h3>
+                <div id="persons-config">
+                    <!-- Person configs will be generated here -->
+                </div>
+                <button class="add-person-btn" onclick="addPerson()">➕ Persoon Toevoegen</button>
+            </div>
+            
+            <!-- Drinks Configuration -->
+            <div class="config-section">
+                <h3>🍺 Drankjes & Prijzen</h3>
+                <div class="config-info">
+                    <strong>Formaat:</strong> prijs,naam (1 per regel)<br>
+                    <strong>Voorbeeld:</strong><br>
+                    2.50,Gini / Ice Tea / Tonic<br>
+                    4.00,Duvel / Wijn<br>
+                    17.00,Wijn fles
+                </div>
+                
+                <textarea id="drinks-config" class="config-textarea" placeholder="2.50,Cola / Jupiler&#10;4.00,Duvel / Wijn&#10;17.00,Wijn fles"></textarea>
+            </div>
+            
+            <div class="config-buttons">
+                <button class="config-btn save-btn" onclick="saveConfig()">💾 Alles Opslaan</button>
+                <button class="config-btn reset-btn-config" onclick="resetConfig()">🔄 Reset naar Standaard</button>
+            </div>
+            
+            <div id="config-status"></div>
+        </div>
+    </div>
+    
+    <!-- Drinks grid (only visible in order screen) -->
+    <div id="drinks-section" class="drinks-section">
+        <div class="drinks" id="drinks-grid"></div>
+        <button class="reset-btn" onclick="resetOrder()">🔄 Reset Bestelling</button>
+    </div>
+
+    <script>
+        // App state
+        let currentBegunstigdeIndex = 0;
+        let currentTotal = 0;
+        let currentCount = 0;
+        let persons = [];
+        let drinks = [];
+
+        // Default data for first-time users
+        const DEFAULT_PERSONS = [
+            { name: "Voorbeeld Persoon", iban: "BE12345678901234" }
+        ];
+
+        const DEFAULT_DRINKS = [
+            [2.5, "Cola / Jupiler / Koffie"],
+            [4.0, "Duvel / Wijn"],
+            [17.0, "Wijn fles"]
+        ];
+
+        // SEPA QR payload generation
+        function makeSEPAPayload(name, iban, amount) {
+            const amountStr = amount.toFixed(2);
+            return `BCD\n002\n1\nSCT\n\n${name.substring(0, 70)}\n${iban}\nEUR${amountStr}\n\n\n`;
+        }
+
+        // Generate real QR code using API
+        function generateQRCode(text) {
+            const encodedText = encodeURIComponent(text);
+            const qrImage = document.getElementById('qr-image');
+            
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedText}`;
+            qrImage.style.display = 'block';
+            
+            qrImage.onerror = function() {
+                const container = qrImage.parentElement;
+                const fallback = document.createElement('div');
+                fallback.style.cssText = 'background: #f0f0f0; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; word-break: break-all; max-width: 180px;';
+                fallback.textContent = text;
+                container.appendChild(fallback);
+                qrImage.style.display = 'none';
+            };
+        }
+
+        // Tab switching
+        function showTab(tabName, tabButton) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            tabButton.classList.add('active');
+            
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(tabName + '-screen').classList.add('active');
+            
+            const drinksSection = document.getElementById('drinks-section');
+            if (tabName === 'order') {
+                drinksSection.style.display = 'block';
+                checkDataAvailability();
+            } else {
+                drinksSection.style.display = 'none';
+                updateConfigUI();
+            }
+        }
+
+        function showConfig() {
+            document.getElementById('setup-banner').classList.add('hidden');
+            showTab('config', document.querySelectorAll('.tab')[1]);
+        }
+
+        function checkDataAvailability() {
+            const noDataEl = document.getElementById('no-data');
+            const emptyQrEl = document.getElementById('empty-qr');
+            const begunstigdeSection = document.getElementById('begunstigde-section');
+            
+            if (persons.length === 0 || drinks.length === 0) {
+                noDataEl.style.display = 'block';
+                emptyQrEl.style.display = 'none';
+                begunstigdeSection.style.display = 'none';
+                document.getElementById('drinks-section').style.display = 'none';
+            } else {
+                noDataEl.style.display = 'none';
+                emptyQrEl.style.display = currentTotal === 0 ? 'block' : 'none';
+                begunstigdeSection.style.display = 'flex';
+                if (document.querySelector('.tab.active').textContent === 'Bestellen') {
+                    document.getElementById('drinks-section').style.display = 'block';
+                }
+            }
+        }
+
+        function renderDrinks() {
+            const grid = document.getElementById('drinks-grid');
+            grid.innerHTML = '';
+            
+            drinks.forEach(([price, name]) => {
+                const btn = document.createElement('button');
+                btn.className = 'drink-btn';
+                btn.onclick = () => addDrink(price);
+                
+                const displayName = name.length > 35 ? name.substring(0, 32) + '...' : name;
+                
+                btn.innerHTML = `
+                    <div class="drink-price">€${price.toFixed(2)}</div>
+                    <div class="drink-name">${displayName}</div>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function addDrink(price) {
+            currentTotal += price;
+            currentCount++;
+            updateDisplay();
+        }
+
+        function resetOrder() {
+            currentTotal = 0;
+            currentCount = 0;
+            updateDisplay();
+        }
+
+        function previousBegunstigde() {
+            currentBegunstigdeIndex = (currentBegunstigdeIndex - 1 + persons.length) % persons.length;
+            updateDisplay();
+        }
+
+        function nextBegunstigde() {
+            currentBegunstigdeIndex = (currentBegunstigdeIndex + 1) % persons.length;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            if (persons.length === 0) {
+                checkDataAvailability();
+                return;
+            }
+
+            document.getElementById('current-begunstigde').textContent = persons[currentBegunstigdeIndex].name;
+            document.getElementById('total-display').textContent = `€${currentTotal.toFixed(2)} (${currentCount})`;
+            
+            const qrImage = document.getElementById('qr-image');
+            const emptyQr = document.getElementById('empty-qr');
+            
+            if (currentTotal > 0) {
+                const person = persons[currentBegunstigdeIndex];
+                const payload = makeSEPAPayload(person.name, person.iban, currentTotal);
+                
+                generateQRCode(payload);
+                emptyQr.style.display = 'none';
+            } else {
+                qrImage.style.display = 'none';
+                emptyQr.style.display = 'block';
+            }
+        }
+
+        // Config functions
+        function loadConfig() {
+            try {
+                // Load persons
+                const savedPersons = localStorage.getItem('sepa-qr-persons');
+                if (savedPersons) {
+                    persons = JSON.parse(savedPersons);
+                } else {
+                    persons = [];
+                }
+                
+                // Load drinks
+                const savedDrinks = localStorage.getItem('sepa-qr-drinks');
+                if (savedDrinks) {
+                    drinks = JSON.parse(savedDrinks);
+                } else {
+                    drinks = [];
+                }
+            } catch (e) {
+                persons = [];
+                drinks = [];
+            }
+        }
+
+        function saveConfig() {
+            try {
+                // Save persons
+                const personConfigs = document.querySelectorAll('.person-config');
+                const newPersons = [];
+                
+                personConfigs.forEach(config => {
+                    const nameInput = config.querySelector('.person-input');
+                    const ibanInput = config.querySelector('.iban-input');
+                    
+                    if (nameInput.value.trim() && ibanInput.value.trim()) {
+                        newPersons.push({
+                            name: nameInput.value.trim(),
+                            iban: ibanInput.value.trim()
+                        });
+                    }
+                });
+                
+                // Save drinks
+                const textarea = document.getElementById('drinks-config');
+                const lines = textarea.value.split('\n').filter(line => line.trim());
+                
+                const newDrinks = lines.map(line => {
+                    const [priceStr, ...nameParts] = line.split(',');
+                    const price = parseFloat(priceStr.trim());
+                    const name = nameParts.join(',').trim();
+                    
+                    if (isNaN(price) || !name) {
+                        throw new Error(`Ongeldige regel: ${line}`);
+                    }
+                    
+                    return [price, name];
+                });
+                
+                if (newPersons.length === 0) {
+                    throw new Error('Voeg tenminste één persoon toe!');
+                }
+                
+                if (newDrinks.length === 0) {
+                    throw new Error('Voeg tenminste één drankje toe!');
+                }
+                
+                persons = newPersons;
+                drinks = newDrinks;
+                
+                localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
+                localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
+                
+                currentBegunstigdeIndex = 0;
+                renderDrinks();
+                updateDisplay();
+                checkDataAvailability();
+                
+                // Hide setup banner
+                document.getElementById('setup-banner').classList.add('hidden');
+                
+                showStatus('✅ Configuratie opgeslagen!', 'success');
+                
+            } catch (e) {
+                showStatus('❌ ' + e.message, 'error');
+            }
+        }
+
+        function resetConfig() {
+            if (confirm('Weet je zeker dat je alle gegevens wilt resetten naar de standaardwaarden?')) {
+                persons = [...DEFAULT_PERSONS];
+                drinks = [...DEFAULT_DRINKS];
+                
+                localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
+                localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
+                
+                updateConfigUI();
+                renderDrinks();
+                updateDisplay();
+                checkDataAvailability();
+                
+                showStatus('✅ Reset naar standaardwaarden!', 'success');
+            }
+        }
+
+        function updateConfigUI() {
+            // Update persons config
+            const personsContainer = document.getElementById('persons-config');
+            personsContainer.innerHTML = '';
+            
+            persons.forEach((person, index) => {
+                addPersonConfig(person.name, person.iban);
+            });
+            
+            // If no persons, add one empty
+            if (persons.length === 0) {
+                addPersonConfig('', '');
+            }
+            
+            // Update drinks textarea
+            const textarea = document.getElementById('drinks-config');
+            textarea.value = drinks.map(([price, name]) => `${price},${name}`).join('\n');
+        }
+
+        function addPerson() {
+            addPersonConfig('', '');
+        }
+
+        function addPersonConfig(name = '', iban = '') {
+            const personsContainer = document.getElementById('persons-config');
+            const personDiv = document.createElement('div');
+            personDiv.className = 'person-config';
+            
+            personDiv.innerHTML = `
+                <div class="person-header">
+                    <span style="font-weight: 600; color: #666;">👤 Persoon ${personsContainer.children.length + 1}</span>
+                    <button class="remove-person-btn" onclick="removePerson(this)">🗑️</button>
+                </div>
+                <input type="text" class="person-input" placeholder="Naam persoon" value="${name}">
+                <input type="text" class="iban-input" placeholder="BE12 3456 7890 1234" value="${iban}">
+            `;
+            
+            personsContainer.appendChild(personDiv);
+        }
+
+        function removePerson(button) {
+            const personsContainer = document.getElementById('persons-config');
+            if (personsContainer.children.length > 1) {
+                button.closest('.person-config').remove();
+                
+                // Update numbering
+                Array.from(personsContainer.children).forEach((config, index) => {
+                    config.querySelector('.person-header span').textContent = `👤 Persoon ${index + 1}`;
+                });
+            } else {
+                alert('Je moet tenminste één persoon hebben!');
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('config-status');
+            status.textContent = message;
+            status.className = `config-status status-${type}`;
+            setTimeout(() => {
+                status.textContent = '';
+                status.className = 'config-status';
+            }, 4000);
+        }
+
+        // PWA functionality
+        let deferredPrompt;
+
+        function initPWA() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                showBanner();
+            });
+
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA installed');
+                hideBanner();
+                deferredPrompt = null;
+            });
+
+            if ('serviceWorker' in navigator) {
+                registerSW();
+            }
+        }
+
+        function showBanner() {
+            document.getElementById('install-banner').classList.add('show');
+        }
+
+        function hideBanner() {
+            document.getElementById('install-banner').classList.remove('show');
+        }
+
+        function closeBanner() {
+            hideBanner();
+            localStorage.setItem('install-banner-dismissed', Date.now());
+        }
+
+        async function installApp() {
+            if (!deferredPrompt) {
+                alert('Voor installatie:\n\n📱 iPhone: Safari → Deel → Voeg toe aan beginscherm\n\n🤖 Android: Chrome → Menu (⋮) → Installeer app');
+                return;
+            }
+
+            const result = await deferredPrompt.prompt();
+            deferredPrompt = null;
+            hideBanner();
+        }
+
+        async function registerSW() {
+            try {
+                const swCode = `
+                const CACHE_NAME = 'sepa-qr-v2';
+                const urlsToCache = ['./', 'https://api.qrserver.com'];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request).then(response => {
+                            if (response) return response;
+                            return fetch(event.request);
+                        })
+                    );
+                });
+                `;
+
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(swBlob);
+                
+                const registration = await navigator.serviceWorker.register(swURL);
+                console.log('SW registered:', registration);
+            } catch (error) {
+                console.log('SW registration failed:', error);
+            }
+        }
+
+        // Initialize app
+        function initApp() {
+            loadConfig();
+            renderDrinks();
+            updateDisplay();
+            checkDataAvailability();
+            initPWA();
+            
+            // Show setup banner if no data configured
+            if (persons.length === 0 || drinks.length === 0) {
+                document.getElementById('setup-banner').classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
