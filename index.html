@@ -653,6 +653,17 @@
                 </div>
             </div>
             
+            <!-- Payment reference configuration -->
+            <div class="config-section">
+                <h3>📝 Betalingsmededeling</h3>
+                <p style="font-size:13px;color:#666;margin-bottom:12px;">Kies de activiteit. De datum wordt automatisch toegevoegd bij het maken van de QR-code.</p>
+                <div style="display:flex;gap:10px;">
+                    <button type="button" id="payment-les" class="config-btn" onclick="selectPaymentType('les')">Les</button>
+                    <button type="button" id="payment-party" class="config-btn" onclick="selectPaymentType('party')">Party</button>
+                </div>
+                <p id="payment-reference-preview" style="margin-top:12px;font-size:13px;color:#555;"></p>
+            </div>
+
             <!-- Drinks Configuration -->
             <div class="config-section">
                 <h3>🍺 Drankjes & Prijzen</h3>
@@ -717,6 +728,7 @@
         let currentCount = 0;
         let persons = [];
         let drinks = [];
+        let paymentType = "les";
 
         // Default data for first-time users
         const DEFAULT_PERSONS = [
@@ -730,9 +742,31 @@
         ];
 
         // SEPA QR payload generation
+        function getPaymentReference() {
+            const today = new Date();
+            const date = [String(today.getDate()).padStart(2, '0'), String(today.getMonth() + 1).padStart(2, '0'), today.getFullYear()].join('/');
+            return `${paymentType === 'party' ? 'Party' : 'Les'} ${date}`;
+        }
+
+        function selectPaymentType(type) {
+            paymentType = type === 'party' ? 'party' : 'les';
+            updatePaymentTypeUI();
+        }
+
+        function updatePaymentTypeUI() {
+            for (const type of ['les', 'party']) {
+                const button = document.getElementById('payment-' + type);
+                const selected = paymentType === type;
+                button.style.background = selected ? '#2196F3' : '#e0e0e0';
+                button.style.color = selected ? 'white' : '#333';
+                button.setAttribute('aria-pressed', String(selected));
+            }
+            document.getElementById('payment-reference-preview').textContent = 'Voorbeeld: ' + getPaymentReference();
+        }
+
         function makeSEPAPayload(name, iban, amount) {
             const amountStr = amount.toFixed(2);
-            return `BCD\n002\n1\nSCT\n\n${name.substring(0, 70)}\n${iban}\nEUR${amountStr}\n\n\n`;
+            return `BCD\n002\n1\nSCT\n\n${name.substring(0, 70)}\n${iban}\nEUR${amountStr}\n\n\n${getPaymentReference()}\n`;
         }
 
         // Generate real QR code using API
@@ -863,6 +897,7 @@
         // Config functions
         function loadConfig() {
             try {
+                paymentType = localStorage.getItem('sepa-qr-payment-type') === 'party' ? 'party' : 'les';
                 // Load persons
                 const savedPersons = localStorage.getItem('sepa-qr-persons');
                 if (savedPersons) {
@@ -952,6 +987,7 @@
                 drinks = newDrinks;
                 activeAccountIndex = newActiveIndex;
                 
+                localStorage.setItem('sepa-qr-payment-type', paymentType);
                 localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
                 localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
                 localStorage.setItem('sepa-qr-active-account', activeAccountIndex.toString());
@@ -975,6 +1011,8 @@
                 persons = [...DEFAULT_PERSONS];
                 drinks = [...DEFAULT_DRINKS];
                 activeAccountIndex = 0;
+                paymentType = "les";
+                localStorage.setItem('sepa-qr-payment-type', paymentType);
                 
                 localStorage.setItem('sepa-qr-persons', JSON.stringify(persons));
                 localStorage.setItem('sepa-qr-drinks', JSON.stringify(drinks));
@@ -990,6 +1028,7 @@
         }
 
         function updateConfigUI() {
+            updatePaymentTypeUI();
             // Update persons config
             const personsContainer = document.getElementById('persons-config');
             personsContainer.innerHTML = '';
@@ -1301,6 +1340,7 @@ Prijs,Naam,
             renderDrinks();
             updateDisplay();
             checkDataAvailability();
+            updatePaymentTypeUI();
             initPWA();
             
             // Show setup banner if no data configured
