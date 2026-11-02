@@ -85,34 +85,6 @@
             padding: 2px 6px;
         }
         
-        /* Setup Banner */
-        .setup-banner {
-            background: linear-gradient(135deg, #FF9800, #F57C00);
-            color: white;
-            padding: 12px 15px;
-            margin: 10px 10px 0;
-            border-radius: 10px;
-            font-size: 13px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
-        }
-        
-        .setup-banner.hidden {
-            display: none;
-        }
-        
-        .setup-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-        
         .tab-bar {
             display: flex;
             background: #f8f9fa;
@@ -306,6 +278,36 @@
         
         .reset-btn:active {
             background: #d32f2f;
+            transform: translateY(1px);
+        }
+
+        .bottom-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .bottom-buttons .reset-btn {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        .inkom-btn {
+            flex: 1;
+            padding: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(76,175,80,0.3);
+            transition: all 0.2s;
+        }
+
+        .inkom-btn:active {
+            background: #388E3C;
             transform: translateY(1px);
         }
         
@@ -583,12 +585,6 @@
         <button class="close-banner" onclick="closeBanner()">×</button>
     </div>
 
-    <!-- Setup Banner -->
-    <div id="setup-banner" class="setup-banner">
-        <div>⚙️ <strong>Eerste keer?</strong> Ga naar Config om je gegevens in te stellen!</div>
-        <button class="setup-btn" onclick="showConfig()">Config openen</button>
-    </div>
-
     <div class="container">
         <!-- Tab Bar -->
         <div class="tab-bar">
@@ -718,7 +714,10 @@
     <!-- Drinks grid (only visible in order screen) -->
     <div id="drinks-section" class="drinks-section">
         <div class="drinks" id="drinks-grid"></div>
-        <button class="reset-btn" onclick="resetOrder()">🔄 Reset Bestelling</button>
+        <div class="bottom-buttons">
+            <button class="reset-btn" onclick="resetOrder()">🔄 Reset</button>
+            <button class="inkom-btn" onclick="inkom()">🎟️ Inkom</button>
+        </div>
     </div>
 
     <script>
@@ -729,6 +728,10 @@
         let persons = [];
         let drinks = [];
         let paymentType = "les";
+        let inkomMode = false;
+
+        const INKOM_AMOUNT = 5.0;
+        const INKOM_REFERENCE = "inkom party Azúcar";
 
         // Default data for first-time users
         const DEFAULT_PERSONS = [
@@ -743,6 +746,7 @@
 
         // SEPA QR payload generation
         function getPaymentReference() {
+            if (inkomMode) return INKOM_REFERENCE;
             const today = new Date();
             const date = [String(today.getDate()).padStart(2, '0'), String(today.getMonth() + 1).padStart(2, '0'), today.getFullYear()].join('/');
             return `${paymentType === 'party' ? 'Party' : 'Les'} ${date}`;
@@ -806,7 +810,6 @@
         }
 
         function showConfig() {
-            document.getElementById('setup-banner').classList.add('hidden');
             showTab('config', document.querySelectorAll('.tab')[1]);
         }
 
@@ -854,12 +857,31 @@
         }
 
         function addDrink(price) {
+            if (inkomMode) {
+                // Leaving inkom mode: start a fresh drinks order
+                inkomMode = false;
+                currentTotal = 0;
+                currentCount = 0;
+            }
             currentTotal += price;
             currentCount++;
             updateDisplay();
         }
 
+        function inkom() {
+            if (!inkomMode) {
+                // Start a fresh inkom order (clears any drinks)
+                inkomMode = true;
+                currentTotal = 0;
+                currentCount = 0;
+            }
+            currentTotal += INKOM_AMOUNT;
+            currentCount++;
+            updateDisplay();
+        }
+
         function resetOrder() {
+            inkomMode = false;
             currentTotal = 0;
             currentCount = 0;
             updateDisplay();
@@ -878,7 +900,7 @@
             
             // Update price and count displays
             document.getElementById('price-display').textContent = `€${currentTotal.toFixed(2)}`;
-            document.getElementById('count-display').textContent = currentCount === 1 ? '1 drankje' : `${currentCount} drankjes`;
+            document.getElementById('count-display').textContent = inkomMode ? `${currentCount}x inkom` : (currentCount === 1 ? '1 drankje' : `${currentCount} drankjes`);
             
             const qrImage = document.getElementById('qr-image');
             const emptyQr = document.getElementById('empty-qr');
@@ -995,9 +1017,6 @@
                 renderDrinks();
                 updateDisplay();
                 checkDataAvailability();
-                
-                // Hide setup banner
-                document.getElementById('setup-banner').classList.add('hidden');
                 
                 showStatus('✅ Configuratie opgeslagen!', 'success');
                 
@@ -1342,11 +1361,7 @@ Prijs,Naam,
             checkDataAvailability();
             updatePaymentTypeUI();
             initPWA();
-            
-            // Show setup banner if no data configured
-            if (persons.length === 0 || drinks.length === 0) {
-                document.getElementById('setup-banner').classList.remove('hidden');
-            }
+
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
